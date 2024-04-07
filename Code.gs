@@ -1,4 +1,6 @@
-function GeneratePages() {  
+function GeneratePages() {
+
+  extractSitemapUrls()  
 
   var inputSheet = SpreadsheetApp.getActive().getSheetByName("InputSheet")
   var allCells = inputSheet.getRange("A1:A").getValues() 
@@ -124,6 +126,29 @@ function GeneratePages() {
       Logger.log(error)
     }  
   })
+}
+
+function extractSitemapUrls() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var sitemapUrl = sheet.getRange("A1").getValue();
+
+  try {
+    var xml = UrlFetchApp.fetch(sitemapUrl).getContentText();
+    var document = XmlService.parse(xml);
+    var root = document.getRootElement();
+    var namespace = XmlService.getNamespace("http://www.sitemaps.org/schemas/sitemap/0.9");
+    var urls = root.getChildren("url", namespace);
+
+    var extractedUrls = [];
+    for (var i = 0; i < urls.length; i++) {
+      var loc = urls[i].getChild("loc", namespace).getText();
+      extractedUrls.push([loc]);
+    }
+
+    sheet.getRange(2, 1, extractedUrls.length, 1).setValues(extractedUrls);
+  } catch (e) {
+    Logger.log("Error: " + e);
+  }
 }
 
 function pageSpeedApiEndpointUrl(strategy, url) {
